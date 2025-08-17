@@ -1,5 +1,4 @@
 pyroblack
-tgcrypto
 aiofiles
 motor
 dnspython
