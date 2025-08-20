@@ -2,3 +2,4 @@ pyroblack
 aiofiles
 motor
 dnspython
+tgcrypto
