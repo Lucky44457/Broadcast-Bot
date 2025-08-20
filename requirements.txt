@@ -3,3 +3,4 @@ aiofiles
 motor
 dnspython
 tgcrypto
+flask
