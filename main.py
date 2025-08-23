@@ -2,6 +2,7 @@ from pyrogram import Client, filters
 from pyrogram.types import Message
 from config import API_ID, API_HASH, BOT_TOKEN, ADMINS
 import os
+import asyncio   # ⬅️ NEW
 
 app = Client("blue_backup_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
 
@@ -98,4 +99,36 @@ async def forward_to_admins(client: Client, message: Message):
     except Exception as e:
         print(f"Failed to forward message to admins: {e}")
 
-app.run()
+
+# /get_users command (only for admins)
+@app.on_message(filters.command("get_users") & filters.user(ADMINS))
+async def get_users(client, message):
+    try:
+        if os.path.exists("users.txt") and os.path.getsize("users.txt") > 0:
+            await message.reply_document("users.txt")
+        else:
+            await message.reply("⚠️ No users found or file is empty.")
+    except Exception as e:
+        await message.reply(f"❌ Error while sending file: {e}")
+
+
+# 🔹 Background task to auto-send user.txt daily
+async def auto_backup():
+    await app.start()  # ensure client is started
+    while True:
+        try:
+            if os.path.exists("users.txt") and os.path.getsize("users.txt") > 0:
+                for admin_id in ADMINS:
+                    await app.send_document(admin_id, "users.txt", caption="📂 Daily Users Backup")
+        except Exception as e:
+            print(f"Backup failed: {e}")
+        await asyncio.sleep(86400)  # wait 24 hours
+
+
+# 🔹 Run bot + backup together
+async def main():
+    asyncio.create_task(auto_backup())
+    await app.run()  # runs the bot normally
+
+if __name__ == "__main__":
+    asyncio.run(main())
