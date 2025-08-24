@@ -1,6 +1,8 @@
 from pyrogram import Client, filters
 from pyrogram.types import Message
 from config import API_ID, API_HASH, BOT_TOKEN, ADMINS
+from pyrogram.errors import FloodWait
+import asyncio
 import os
 
 app = Client("blue_backup_bot", api_id=API_ID, api_hash=API_HASH, bot_token=BOT_TOKEN)
@@ -44,7 +46,7 @@ async def broadcast(client, message):
 
     try:
         with open("users.txt", "r") as f:
-            users = f.read().splitlines()
+            users = [u.strip() for u in f.readlines() if u.strip().isdigit()]
     except FileNotFoundError:
         await message.reply("❌ No users to broadcast to.")
         return
@@ -54,7 +56,12 @@ async def broadcast(client, message):
         try:
             await message.reply_to_message.copy(chat_id=int(user_id))
             sent += 1
-        except:
+        except FloodWait as e:
+            print(f"FloodWait: waiting {e.value} sec")
+            await asyncio.sleep(e.value)
+            continue
+        except Exception as e:
+            print(f"Failed for {user_id}: {e}")
             failed += 1
 
     await message.reply(f"✅ Broadcast completed.\n\n📬 Sent: `{sent}`\n❌ Failed: `{failed}`")
@@ -106,7 +113,7 @@ async def forward_to_admins(client: Client, message: Message):
         for admin_id in ADMINS:
             await client.send_message(
                 chat_id=admin_id,
-                text=f"{user_info}\n\n{message.text}"
+                text=f"{user_info}\n\n{message.text or '📎 Media message'}"
             )
     except Exception as e:
         print(f"Failed to forward message to admins: {e}")
